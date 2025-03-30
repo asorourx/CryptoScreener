@@ -664,16 +664,16 @@ function getPlatformIcons(symbol) {
     return `
         <span class="platform-icons">
             <a href="${platformUrls.binance(baseSymbol)}" target="_blank" class="platform-icon" title="Open in Binance" onclick="event.stopPropagation(); copyToClipboard('${baseSymbol}')">
-                <img src="icons/binance.png" alt="Binance" class="platform-svg">
+                <img src="icons/binance.png" alt="Binance" width="24" height="24"">
             </a>
             <a href="${platformUrls.bybit(baseSymbol)}" target="_blank" class="platform-icon" title="Open in Bybit" onclick="event.stopPropagation(); copyToClipboard('${baseSymbol}')">
-                <img src="icons/bybit.png" alt="Bybit" class="platform-svg">
+                <img src="icons/bybit.png" alt="Bybit" width="24" height="24"">
             </a>
             <a href="${platformUrls.gateio(baseSymbol)}" target="_blank" class="platform-icon" title="Open in Gate.io" onclick="event.stopPropagation(); copyToClipboard('${baseSymbol}')">
-                <img src="icons/gateio.png" alt="Gate.io" class="platform-svg">
+                <img src="icons/gateio.png" alt="Gate.io" width="24" height="24"">
             </a>
             <a href="${platformUrls.tradingview(baseSymbol)}" target="_blank" class="platform-icon" title="Open in TradingView" onclick="event.stopPropagation(); copyToClipboard('${baseSymbol}')">
-                <img src="icons/tradingview.png" alt="TradingView" class="platform-svg">
+                <img src="icons/tradingview.png" alt="TradingView" width="24" height="24"">
             </a>
         </span>
     `;
