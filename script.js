@@ -25,9 +25,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let pauseStartTime = 0;
     let pauseTimerInterval;
     let maxPauseDuration = 3 * 60 * 1000;
-    let visibleRows = 10;
+    let visibleRows = 15;
     const MAX_ROWS = 25;
-    const INITIAL_ROWS = 10;
+    const INITIAL_ROWS = 15;
     const ROWS_INCREMENT = 5;
     
     // Search State
@@ -687,15 +687,15 @@ function getPlatformIcons(symbol) {
         }
     }
     
-    function toggleShowMore() {
-        if (visibleRows >= MAX_ROWS) {
-            visibleRows = INITIAL_ROWS;
-        } else {
-            visibleRows = Math.min(visibleRows + ROWS_INCREMENT, MAX_ROWS);
-        }
-        updateRowVisibility();
-        updateShowMoreButton();
+function toggleShowMore() {
+    if (visibleRows >= MAX_ROWS) {
+        visibleRows = 15; // Changed from INITIAL_ROWS to 15 for consistency
+    } else {
+        visibleRows = Math.min(visibleRows + ROWS_INCREMENT, MAX_ROWS);
     }
+    updateRowVisibility();
+    updateShowMoreButton();
+}
     
     function updateRowVisibility() {
         const rows = dataEl.querySelectorAll('tr');
