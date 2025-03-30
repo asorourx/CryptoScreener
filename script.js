@@ -291,10 +291,10 @@ function renderSearchResults(results) {
             <div class="coin-content">
                 <span class="pair-name">${item.symbol}/USDT</span>
                 <div class="platform-icons-container">
-                    <img src="icons/binance.svg" alt="Binance" title="Open in Binance">
-                    <img src="icons/bybit.svg" alt="Bybit" title="Open in Bybit">
-                    <img src="icons/gateio.svg" alt="Gate.io" title="Open in Gate.io">
-                    <img src="icons/tradingview.svg" alt="TradingView" title="Open in TradingView">
+                    <img src="icons/binance.png" alt="Binance" title="Open in Binance">
+                    <img src="icons/bybit.png" alt="Bybit" title="Open in Bybit">
+                    <img src="icons/gateio.png" alt="Gate.io" title="Open in Gate.io">
+                    <img src="icons/tradingview.png" alt="TradingView" title="Open in TradingView">
                 </div>
             </div>
             <span class="market-type ${item.type === 'spot' ? 'spot-type' : 'futures-type'}">
@@ -664,16 +664,16 @@ function getPlatformIcons(symbol) {
     return `
         <span class="platform-icons">
             <a href="${platformUrls.binance(baseSymbol)}" target="_blank" class="platform-icon" title="Open in Binance" onclick="event.stopPropagation(); copyToClipboard('${baseSymbol}')">
-                <img src="icons/binance.svg" alt="Binance" class="platform-svg">
+                <img src="icons/binance.png" alt="Binance" class="platform-svg">
             </a>
             <a href="${platformUrls.bybit(baseSymbol)}" target="_blank" class="platform-icon" title="Open in Bybit" onclick="event.stopPropagation(); copyToClipboard('${baseSymbol}')">
-                <img src="icons/bybit.svg" alt="Bybit" class="platform-svg">
+                <img src="icons/bybit.png" alt="Bybit" class="platform-svg">
             </a>
             <a href="${platformUrls.gateio(baseSymbol)}" target="_blank" class="platform-icon" title="Open in Gate.io" onclick="event.stopPropagation(); copyToClipboard('${baseSymbol}')">
-                <img src="icons/gateio.svg" alt="Gate.io" class="platform-svg">
+                <img src="icons/gateio.png" alt="Gate.io" class="platform-svg">
             </a>
             <a href="${platformUrls.tradingview(baseSymbol)}" target="_blank" class="platform-icon" title="Open in TradingView" onclick="event.stopPropagation(); copyToClipboard('${baseSymbol}')">
-                <img src="icons/tradingview.svg" alt="TradingView" class="platform-svg">
+                <img src="icons/tradingview.png" alt="TradingView" class="platform-svg">
             </a>
         </span>
     `;
@@ -889,19 +889,19 @@ function displayPairInfo(symbol, type) {
             const platformLinks = `
                 <div class="platform-links">
                     <a href="https://www.binance.com/en/futures/${symbol}_USDT" target="_blank" class="platform-link" title="Open in Binance" onclick="event.stopPropagation(); copyToClipboard('${symbol}')">
-                        <img src="icons/binance.svg" alt="Binance" class="platform-icon">
+                        <img src="icons/binance.png" alt="Binance" class="platform-icon">
                         <span>Binance</span>
                     </a>
                     <a href="https://www.bybit.com/trade/usdt/${symbol}USDT" target="_blank" class="platform-link" title="Open in Bybit" onclick="event.stopPropagation(); copyToClipboard('${symbol}')">
-                        <img src="icons/bybit.svg" alt="Bybit" class="platform-icon">
+                        <img src="icons/bybit.png" alt="Bybit" class="platform-icon">
                         <span>Bybit</span>
                     </a>
                     <a href="https://www.gate.io/futures_trade/${symbol}_USDT" target="_blank" class="platform-link" title="Open in Gate.io" onclick="event.stopPropagation(); copyToClipboard('${symbol}')">
-                        <img src="icons/gateio.svg" alt="Gate.io" class="platform-icon">
+                        <img src="icons/gateio.png" alt="Gate.io" class="platform-icon">
                         <span>Gate.io</span>
                     </a>
                     <a href="https://www.tradingview.com/chart/?symbol=BINANCE:${symbol}USDT.P" target="_blank" class="platform-link" title="Open in TradingView" onclick="event.stopPropagation(); copyToClipboard('${symbol}')">
-                        <img src="icons/tradingview.svg" alt="TradingView" class="platform-icon">
+                        <img src="icons/tradingview.png" alt="TradingView" class="platform-icon">
                         <span>TradingView</span>
                     </a>
                 </div>
