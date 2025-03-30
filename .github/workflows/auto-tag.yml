@@ -1,0 +1,10 @@
+name: Auto-Tag for CDN
+on: push
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git tag v1.0.${{ github.run_number }}
+          git push origin --tags
