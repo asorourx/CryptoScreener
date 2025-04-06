@@ -3,50 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Top 25 USDT Futures</title>
+    <title>amrx screener</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
-<link rel="preload" href="icons/binance.png" as="image">
-<link rel="preload" href="icons/bybit.png" as="image">
-<link rel="preload" href="icons/gateio.png" as="image">
-<link rel="preload" href="icons/tradingview.png" as="image">
-
+    <link rel="stylesheet" href="src/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&display=swap"></noscript>
+<link 
+  href="./fonts/oxanium.woff2" 
+  type="font/woff2" 
+  crossorigin="anonymous"
+>    
 </head>
+    
 <body>
     <div id="app">
-        <!-- Add this right after the opening <div id="app"> in index.html -->
-<div class="search-container" style="display: none;">
-    <input type="text" id="searchInput" placeholder="Search any USDT pair (Spot or Futures)...">
-    <div id="searchResults"></div>
-</div>
-        <div class="header-container">
-            <div class="title-container">
-                <h1>Top 25 USDT Futures</h1>
-            </div>
-            <div class="header-buttons">
-                <button id="pauseButton" class="header-button">Pause</button>
-                <span id="pauseTimer" class="pause-timer" style="display: none;"></span>
-                <button id="showAllButton" class="header-button">Show All</button>
-                <button id="refreshButton" class="refresh-button" title="Refresh prices">R</button>
-                <div class="highlight-count">
-                    <div id="highlightIcon" class="highlight-icon">0</div>
-                    <div id="highlightDropdown" class="highlight-dropdown"></div>
-                </div>
-            </div>
+        <div class="search-container" style="display: none;">
+            <input type="text" id="searchInput" placeholder="Search any USDT pair (Spot or Futures)...">
+            <div id="searchResults"></div>
         </div>
-        <!-- Add this right after the header container -->
-<div id="tradingview-widget-container" class="tradingview-widget-container" style="display: none; margin-top: 8px;">
-  <div class="tradingview-widget-container__widget"></div>
+        
+<div class="header-container">
+    <div id="tradingview-widget-container" class="tradingview-widget-container" style="display: none; margin-top: 8px;">
+            <div class="tradingview-widget-container__widget"></div>
+        </div>
+    <div class="header-buttons">
+        <button id="pauseButton" class="header-button">Pause</button>
+        <button id="settingsButton" class="header-button" title="Visual settings"><i class="fas fa-cog"></i></button>
+        <button id="refreshButton" class="refresh-button" title="Refresh prices">R</button>
+        <div class="connection-indicator" id="connectionIndicator"></div>
+        <button id="TVScreen" class="tv-screen" title="TravindView Screen">T</button>
+    </div>
 </div>
-        <div id="loading">Loading...</div>
+        <!-- TradingView Widget Under Pause and other Icons -->
+        <!--<div id="tradingview-widget-container" class="tradingview-widget-container" style="display: none; margin-top: 8px;">
+            <div class="tradingview-widget-container__widget"></div>
+        </div>-->
+        
+        <div id="loading"></div>
         <table>
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Pair</th>
+                    <th>USDT.P</th>
                     <th>Price</th>
-                    <th>Change</th>
-                    <th>Vol</th>
+                    <th>24H % Change</th>
+                    <th id="sortHeader">24H Volume <span class="sort-indicator">↓</span></th>
                 </tr>
             </thead>
             <tbody id="data"></tbody>
@@ -54,6 +58,106 @@
         <div class="show-more-container">
             <button id="showMoreButton" class="show-more-button">Show More</button>
         </div>
+        
+        <!-- Visual Feedback Settings Panel -->
+<!-- Add this right before the closing </div> of your #app -->
+<div id="visualSettingsPanel" class="settings-panel" style="display: none;">
+    <div class="settings-header">
+        <h3>Visual Feedback Settings</h3>
+        <button class="close-settings">&times;</button>
     </div>
-<script src="https://cdn.jsdelivr.net/gh/asorourx/CryptoScreener@v2025.03.30-24/script.js"></script></body>
+    <div class="settings-content">
+        <div class="setting-item">
+            <label>
+                <input type="checkbox" id="toggleVisualFeedback" checked>
+            </label>
+        </div>
+        <div class="setting-item">
+            <div style="display: flex; align-items: center;">
+                <input type="range" id="animationDuration" min="500" max="3000" value="1500" step="100">
+                <span id="durationValue">1500ms</span>
+            </div>
+        </div>
+        <div class="setting-item">
+            <label>Up ↑:</label>
+            <input type="color" id="upColorPicker" value="#0ecb81">
+        </div>
+        <div class="setting-item">
+            <label>Down ↓:</label>
+            <input type="color" id="downColorPicker" value="#f6465d">
+        </div>
+    </div>
+</div>
+        
+        <div id="pair-detail-modal" class="pair-detail-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="pair-title"></h3>
+            <span class="close-modal">&times;</span>
+        </div>
+<div class="modal-body">
+    <div class="pair-stats">
+        <!-- Existing stats -->
+        <div class="stat-item">
+            <span class="stat-label">Price</span>
+            <span id="pair-price" class="stat-value"></span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">24H High</span>
+            <span id="pair-high" class="stat-value"></span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">24H Low</span>
+            <span id="pair-low" class="stat-value"></span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">24H Volume</span>
+            <span id="pair-volume" class="stat-value"></span>
+        </div>
+        
+        <!-- New change boxes -->
+        <div class="stat-item change-box">
+            <span class="stat-label">24H Change</span>
+            <div id="pair-24h-change" class="change-values">
+                <span class="change-percent"></span>
+                <span class="change-amount"></span>
+            </div>
+        </div>
+        <div class="stat-item change-box">
+            <span class="stat-label">12H Change</span>
+            <div id="pair-12h-change" class="change-values">
+                <span class="change-percent"></span>
+                <span class="change-amount"></span>
+            </div>
+        </div>
+    </div>
+            <div class="platform-links">
+                <a href="#" class="platform-link binance" target="_blank">
+                    <img src="icons/binance.png" alt="Binance" width="20" height="20">
+                </a>
+                <a href="#" class="platform-link bybit" target="_blank">
+                    <img src="icons/bybit.png" alt="Bybit" width="20" height="20">
+                </a>
+                <a href="#" class="platform-link gateio" target="_blank">
+                    <img src="icons/gateio.png" alt="Gate.io" width="20" height="20">
+                </a>
+                <a href="#" class="platform-link tradingview" target="_blank">
+                    <img src="icons/tradingview.png" alt="TradingView" width="20" height="20">
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+        
+    </div>
+<!-- Defer non-critical scripts -->
+<script src="src/js/icons.js" defer></script>
+<script src="src/js/search.js" defer></script>
+<script src="src/js/fg-index.js" defer></script>
+<script src="src/js/feedback.js" defer></script>
+<script src="src/js/tv-widget.js" defer></script>
+
+<!-- Load main.js last with defer -->
+<script src="src/js/main.js" defer></script>
+</body>
 </html>
