@@ -1,0 +1,878 @@
+/* Base Styles */
+body {
+    font-family: 'Oxanium', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0f1923;
+    color: #eaeaea;
+    margin: 0;
+    padding: 8px;
+    font-size: 14px;
+}
+  .header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    position: relative;
+    min-height: 50px;
+  }
+
+/*Hiding "Show more" button */
+.show-more-container {
+    visibility: hidden;
+}
+
+#app {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+/* Table Styles */
+table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+th, td {
+    padding: 5px 4px;
+    text-align: left;
+    border-bottom: -1px solid #2a2f3d;
+    line-height: 1.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/*Skeleton Screens*/
+/* Skeleton loading styles */
+.skeleton {
+    background-color: #2a2f3d;
+    background-image: linear-gradient(90deg, #2a2f3d, #3a3f4d, #2a2f3d);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+/* END OF Skeleton loading styles */
+
+
+/* Prevent first column from being highlighted during price updates
+ 
+#data tr.update-up td:first-child,
+#data tr.update-down td:first-child {
+    animation: none !important;
+    background-color: transparent !important;
+}
+Prevent first column from being highlighted during price updates */
+
+th:nth-child(1), td:nth-child(1) { width: 1.2%; }
+th:nth-child(2), td:nth-child(2) { width: 10%; }
+th:nth-child(3), td:nth-child(3) { width: 5%; }
+th:nth-child(4), td:nth-child(4) { width: 5%; }
+th:nth-child(5), td:nth-child(5) { width: 20%; }
+
+th {
+    background: #2a2f3d;
+    position: sticky;
+    top: 0;
+    font-weight: 500;
+}
+
+tr:hover {
+    background: #2a2f3b;
+}
+
+/* Color Classes */
+.up {
+    color: #0ecb81 !important;
+}
+
+.down {
+    color: #f6465d !important;
+}
+
+/* Header Styles */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    position: relative;
+    min-height: 50px;
+}
+
+.header-buttons {
+    position: absolute;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header-button {
+    background: #2a2f3d;
+    color: #f0b90b;
+    border: 1px solid #f0b90b;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s;
+}
+
+.header-button:hover {
+    background: #3a3f4d;
+}
+
+.refresh-button {
+    background: #2a2f3d;
+    color: #f0b90b;
+    border: 1px solid #f0b90b;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.refresh-button:hover {
+    background: #3a3f4d;
+    transform: rotate(90deg);
+}
+
+.tv-screen {
+    background: #2a2f3d;
+    color: #f0b90b;
+    border: 1px solid #f0b90b;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.tv-screen:hover {
+    background: #3a3f4d;
+    transform: rotate(90deg);
+}
+
+/* Start of Connection Status */
+.connection-status {
+    min-width: 20px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+}
+
+.connection-indicator {
+    background: #2a2f3d; /* Default background */
+    color: #f0b90b; /* Default text color */
+    border: 1px solid #f0b90b; /* Default border */
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.2s;
+    position: relative;
+    line-height: 1;
+}
+
+/* If you're using emoji or special characters, add this */
+.connection-indicator span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    transform: translateY(1px); /* Fine-tune vertical alignment */
+}
+
+/* Status colors */
+.connection-indicator.connected { background: rgba(14, 203, 129, 0.2);
+    color: #0ecb81;
+    border-color: #0ecb81;
+}
+.connection-indicator.disconnected { background: rgba(246, 70, 93, 0.2);
+    color: #f6465d;
+    border-color: #f6465d;
+}
+.connection-indicator.connecting { color: #f8d347; border-color: #f8d347; }
+.connection-indicator.connecting,
+.connection-indicator.reconnecting { background: rgba(248, 211, 71, 0.2);
+    color: #f8d347;
+    border-color: #f8d347;
+}
+.connection-indicator.error { background: rgba(255, 153, 0, 0.2);
+    color: #ff9900;
+    border-color: #ff9900;
+}
+.connection-indicator.paused { background: rgba(170, 170, 170, 0.2); /* Grey background */
+    color: #aaaaaa; /* Grey text */
+    border-color: #aaaaaa; /* Grey border */
+}
+
+/* Tooltip for connection indicator */
+.connection-indicator::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2a2f3d;
+    color: #f0b90b;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.connection-indicator:hover::after {
+    opacity: 1;
+}
+
+/*End of Connection Status*/
+
+.tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.connection-status:hover .tooltip {
+    opacity: 1;
+}
+
+/* Search Styles */
+.search-container {
+    position: fixed;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    max-width: 600px;
+    z-index: 1000;
+    background: #2a2f3d;
+    padding: 10px;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    display: none;
+}
+
+#searchInput {
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 14px;
+    background: #2a2f3d;
+    color: #eaeaea;
+    border: 1px solid #444;
+    border-radius: 4px;
+    box-sizing: border-box;
+    transition: all 0.2s;
+}
+
+#searchInput:focus {
+    border-color: #f0b90b;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(240, 185, 11, 0.2);
+}
+
+#searchResults {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 8px;
+    border-radius: 4px;
+    background: #2a2f3d;
+    border: 1px solid #444;
+    display: none;
+}
+
+.coin-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #3a3f4d;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.2s;
+    height: 30px;
+    box-sizing: border-box;
+}
+
+.coin-item:hover, .coin-item.selected {
+    background: #3a3f4d;
+}
+
+.market-type {
+    font-size: 10px;
+    padding: 3px 6px;
+    border-radius: 3px;
+    margin-left: 12px;
+}
+
+.spot-type {
+    color: #0ecb81;
+    border: 1px solid #0ecb81;
+    background: rgba(14, 203, 129, 0.1);
+}
+
+.futures-type {
+    color: #f0b90b;
+    border: 1px solid #f0b90b;
+    background: rgba(240, 185, 11, 0.1);
+}
+
+/* Platform Icons */
+.platform-icons {
+    display: inline-flex;
+    gap: 6px;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.platform-icon img {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    object-fit: contain;
+    display: inline-block;
+    transition: all 0.2s;
+    opacity: 0.8;
+}
+
+.platform-icon:hover img {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Pair Detail Modal */
+.pair-detail-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    width: 90%;
+    max-width: 400px;
+    height: auto;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: #2a2f3d;
+    border: 1px solid #f0b90b;
+    border-radius: 8px;
+    padding: 20px;
+    position: relative;
+    margin: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #f0b90b;
+}
+
+.close-modal {
+    color: #aaa;
+    font-size: 28px;
+    cursor: pointer;
+}
+
+.close-modal:hover {
+    color: #fff;
+}
+
+.pair-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.stat-item {
+    background: #2a2f3d;
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.stat-label {
+    display: block;
+    color: #8a8a8a;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    display: block;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+/* Settings Panel */
+.settings-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #2a2f3d;
+    border: 1px solid #f0b90b;
+    border-radius: 4px;
+    padding: 15px;
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    width: 350px;
+    display: none;
+}
+
+.settings-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 25, 35, 0.7);
+    z-index: 999;
+    display: none;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #3a3f4d;
+}
+
+.settings-header h3 {
+    margin: 0;
+    color: #f0b90b;
+    font-size: 1.1em;
+}
+
+.close-settings {
+    background: none;
+    border: none;
+    color: #f0b90b;
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 5px;
+}
+
+.close-settings:hover {
+    color: #ffffff;
+}
+
+.settings-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.setting-item label {
+    color: #eaeaea;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.setting-item input[type="checkbox"] {
+    accent-color: #f0b90b;
+}
+
+.setting-item input[type="range"] {
+    width: 100%;
+    margin: 0;
+}
+
+.setting-item input[type="color"] {
+    width: 30px;
+    height: 30px;
+}
+
+#durationValue {
+    margin-left: 8px;
+    min-width: 40px;
+    text-align: left;
+}
+
+/* Fear & Greed Index Popup */
+.fear-greed-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 25, 35, 0.85);
+    z-index: 3000;
+    display: none;
+    backdrop-filter: blur(2px);
+}
+
+.fear-greed-popup-overlay.show {
+    display: block;
+}
+
+.fear-greed-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 500px;
+    background: #1a1e27;
+    border: 1px solid #f0b90b;
+    border-radius: 6px;
+    padding: 15px;
+    z-index: 3001;
+    display: none;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.fear-greed-popup.show {
+    display: block;
+}
+
+.fear-greed-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #2a2f3d;
+}
+
+.fear-greed-popup-header h3 {
+    margin: 0;
+    color: #f0b90b;
+    font-size: 1.1em;
+    font-weight: 500;
+    text-align: center;
+}
+
+.fear-greed-popup-close {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 5px;
+}
+
+.fear-greed-popup-close:hover {
+    color: #fff;
+}
+
+.fear-greed-popup-value {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+#fearGreedValue {
+    font-size: 2.5em;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+#fearGreedLabel {
+    font-size: 1em;
+    display: block;
+    color: #eaeaea;
+}
+
+.extreme-greed { color: #40e754; }
+.greed { color: #23925b; }
+.neutral { color: #eaeaea; }
+.fear { color: #f8d347; }
+.extreme-fear { color: #f6465d; }
+
+.fear-greed-popup-chart {
+    height: 180px;
+    margin-bottom: 15px;
+}
+
+.fear-greed-popup-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.fear-greed-popup-stat-item {
+    background: #2a2f3d;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.fear-greed-popup-stat-label {
+    display: block;
+    color: #8a8a8a;
+    font-size: 0.85em;
+    margin-bottom: 3px;
+}
+
+
+.fear-greed-popup-stat-value {
+    display: block;
+    font-weight: 500;
+    font-size: 0.95em;
+}
+
+/* Animation Styles */
+:root {
+    --up-color: rgba(14, 203, 129, 0.2);
+    --down-color: rgba(246, 70, 93, 0.2);
+    --animation-duration: 1500ms;
+}
+
+@keyframes price-up {
+    0% { background-color: rgba(14, 203, 129, 0); }
+    50% { background-color: var(--up-color); }
+    100% { background-color: rgba(14, 203, 129, 0); }
+}
+
+@keyframes price-down {
+    0% { background-color: rgba(246, 70, 93, 0); }
+    50% { background-color: var(--down-color); }
+    100% { background-color: rgba(246, 70, 93, 0); }
+}
+
+.update-up {
+    animation: price-up var(--animation-duration) ease-out;
+}
+
+.update-down {
+    animation: price-down var(--animation-duration) ease-out;
+}
+
+/* Manual Highlight Styles */
+.highlighted {
+    background-color: rgba(255, 0, 255, 0.2) !important;
+    outline: 1px solid rgba(255, 0, 255, 0.5);
+}
+
+#data tr td:first-child.highlighted {
+    background-color: rgba(255, 0, 255, 0.2) !important;
+    outline: 1px solid rgba(255, 0, 255, 0.5);
+    transition: none;
+}
+
+/* Volume Container Styles */
+.volume-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.volume-value {
+    min-width: 80px;
+    display: inline-block;
+    text-align: left;
+}
+
+.highlight-container {
+    display: inline-block;
+    color: white;
+    margin-left: 6px;
+}
+
+.highlight-separator {
+    color: white;
+    margin: 0 4px;
+}
+
+.highlight-timer {
+    color: #888;
+}
+
+.highlight-container .up {
+    color: #0ecb81;
+}
+
+.highlight-container .down {
+    color: #f6465d;
+}
+
+/* Temporary Message */
+.temp-message {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.temp-message.fade-out {
+    animation: fadeOut 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; bottom: 10px; }
+    to { opacity: 1; bottom: 20px; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; bottom: 20px; }
+    to { opacity: 0; bottom: 30px; }
+}
+
+
+/* Stalling Pairs */
+.stale-pair {
+    opacity: 0.6;
+    position: relative;
+}
+.stale-pair::after {
+    content: "STALE";
+    position: absolute;
+    right: 5px;
+    top: 2px;
+    font-size: 9px;
+    color: #f0b90b;
+}
+/* Add to styles.css */
+.paused-state {
+    color: #f0b90b;
+    font-weight: bold;
+}
+
+
+/* TradingView Widget Styles */
+.tradingview-widget-container {
+    position: absolute;
+    left: 0;
+    right: 200px; /* Adjust this value based on your header buttons width */
+    height: 65px;
+    overflow: hidden;
+    z-index: 1;
+    display: none; /* Start hidden by default */
+    transition: opacity 0.3s ease;
+
+}
+@media (max-width: 768px) {
+    .tradingview-widget-container {
+        right: 250px; /* Give more space for buttons */
+    }
+}
+
+.tradingview-widget-container__widget {
+    height: 100%;
+    width: 100%;
+}
+
+/* Tooltip for TV button */
+.tv-screen {
+    position: relative;
+}
+
+.tv-screen::after {
+    content: "Trading View";
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2a2f3d;
+    color: #f0b90b;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.tv-screen:hover::after {
+    opacity: 1;
+}
+/*End of Tradinview Widget*/
+
+/*Start of Fear & Greed Index*/
+.update-info {
+    display: flex;
+    flex-direction: column;
+    margin-top: 8px;
+    font-size: 15px;
+    color: #8a8a8a;
+    gap: 2px;
+}
+
+.update-info span {
+    display: block;
+    text-align: center;
+}
+
+.fear-greed-popup-value {
+    padding-bottom: 10px;
+    border-bottom: 1px solid #2a2f3d;
+    margin-bottom: 15px;
+}
+.update-info #nextUpdateTime {
+    color: #ffffff;
+}
+.status-colored {
+    transition: color 0.3s ease;
+}
+
+/*End of Fear & Greed Index*/
