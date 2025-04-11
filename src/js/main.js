@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', function() {
 // ===== CONFIGURATION ===== 
 const CONFIG = {
+  isLoading: false,
   api: {
     spot: 'https://api.binance.com/api/v3',
     futures: 'https://fapi.binance.com/fapi/v1',
@@ -30,26 +31,28 @@ const CONFIG = {
 
 
     // ===== STATE MANAGEMENT =====
-    const state = {
-        data: [],
-        socket: null,
-        currentWsUrl: CONFIG.api.ws,
-        isPaused: false,
-        pinnedPairs: JSON.parse(localStorage.getItem('pinnedPairs')) || [],
-        highlightedPairs: JSON.parse(localStorage.getItem(CONFIG.defaults.highlightStorageKey)) || {},
-        highlightTimers: {},
-        sortDirection: 'volume-desc',
-        visibleCount: CONFIG.defaults.visiblePairs,
-        pauseStartTime: null,  // Add this line
-        pauseTimer: null,      // Add this line
-  connection: {                // Modified connection state
-    status: 'disconnected',    // Same status indicators
-    retryCount: 0,
-    lastUpdate: null,
-    lastPing: null,
-    pingInterval: null,
-    // Removed backupIndex
-  }
+const state = {
+    data: [],
+    socket: null,
+    currentWsUrl: CONFIG.api.ws,
+    isPaused: false,
+    pinnedPairs: JSON.parse(localStorage.getItem('pinnedPairs')) || [],
+    highlightedPairs: JSON.parse(localStorage.getItem(CONFIG.defaults.highlightStorageKey)) || {},
+    highlightTimers: {},
+    sortDirection: {  // MOVED OUT OF CONNECTION OBJECT
+        volume: 'desc',
+        change: null
+    },
+    visibleCount: CONFIG.defaults.visiblePairs,
+    pauseStartTime: null,
+    pauseTimer: null,
+    connection: {
+        status: 'disconnected',
+        retryCount: 0,
+        lastUpdate: null,
+        lastPing: null,
+        pingInterval: null
+    }
 };
 
     // ===== DOM ELEMENTS =====
@@ -69,6 +72,9 @@ const CONFIG = {
         pairVolume: document.getElementById('pair-volume'),
         pair24hChange: document.getElementById('pair-24h-change'),
         pair12hChange: document.getElementById('pair-12h-change'),
+        searchInput: document.getElementById('searchInput'),
+        searchContainer: document.querySelector('.search-container'),
+        searchResults: document.getElementById('searchResults'),
     };
 
 // ===== FORMATTER =====
@@ -99,7 +105,6 @@ const formatter = {
         return `$${formatted}`;
     },
     
-    
     volume: (value) => {
         const num = parseFloat(value);
         if (num >= 1000000000) return `$${(num/1000000000).toFixed(1)}B`;
@@ -109,7 +114,7 @@ const formatter = {
     },
     change: (value) => {
         return `${parseFloat(value) >= 0 ? '+' : ''}${parseFloat(value).toFixed(2)}%`;
-    },  // <-- Add comma here
+    },
     timer: (seconds) => {
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
@@ -161,168 +166,171 @@ dollarChange: (currentPrice, highlightPrice, symbol) => {
 }
 };
 
+// ===== CONNECTION MANAGER =====
     // ===== CONNECTION MANAGER =====
-const connectionManager = {
-    connect: () => {
-        // Clear any existing connection
-        if (state.socket) {
-            state.socket.onopen = null;
-            state.socket.onclose = null;
-            state.socket.onerror = null;
-            state.socket.close();
-        }
+    const connectionManager = {
+        connect: function() {
+            // Clear any existing connection
+            if (state.socket) {
+                state.socket.onopen = null;
+                state.socket.onclose = null;
+                state.socket.onerror = null;
+                state.socket.close();
+            }
 
-        state.connection.status = 'connecting';
-        ui.updateConnectionStatus();
+            // Use AbortController for better cleanup
+            const abortController = new AbortController();
+            state.abortController = abortController;
 
-        console.log(`Connecting to ${state.currentWsUrl} (attempt ${state.connection.retryCount + 1})`);
-
-        state.socket = new WebSocket(state.currentWsUrl);
-
-        state.socket.onopen = () => {
-            console.log('WebSocket connected successfully');
-            state.connection.status = 'connected';
-            state.connection.retryCount = 0;
-            state.connection.lastUpdate = Date.now();
+            state.connection.status = 'connecting';
             ui.updateConnectionStatus();
-            connectionManager.startHeartbeat();
-            dataManager.loadInitialData();
-            
-            // Start stale pair checker (only if not already running)
-            if (!state.stalePairInterval) {
-                state.stalePairInterval = setInterval(
-                    () => connectionManager.checkStalePairs(),
-                    900000 // 15 minutes
-                );
-            }
-        };
 
-        state.socket.onmessage = (e) => {
-            state.connection.lastUpdate = Date.now();
-            if (!state.isPaused) {
-                dataManager.processMarketData(JSON.parse(e.data));
-            }
-        };
+            state.socket = new WebSocket(state.currentWsUrl);
+            state.socket.binaryType = 'arraybuffer';
 
-        state.socket.onclose = (e) => {
-            console.log(`Connection closed: ${e.code} ${e.reason}`);
-            connectionManager.handleDisconnection();
-        };
+            state.socket.onopen = () => {
+                if (abortController.signal.aborted) return;
+                state.connection.status = 'connected';
+                state.connection.retryCount = 0;
+                state.connection.lastUpdate = Date.now();
+                ui.updateConnectionStatus();
+                dataManager.loadInitialData();
+            };
 
-        state.socket.onerror = (e) => {
-            console.error('WebSocket error:', e);
-            connectionManager.handleDisconnection();
-        };
-    },
-
-    handleDisconnection: () => {
-        if (state.isPaused) return;
-
-        state.connection.status = 'disconnected';
-        ui.updateConnectionStatus();
-        connectionManager.stopHeartbeat();
-        connectionManager.scheduleReconnection();
-    },
-
-    scheduleReconnection: () => {
-        state.connection.retryCount++;
-        
-        const delay = Math.min(
-            CONFIG.connection.baseDelay * Math.pow(2, state.connection.retryCount),
-            CONFIG.connection.maxDelay
-        );
-
-        console.log(`Retrying in ${delay}ms (attempt ${state.connection.retryCount + 1})`); 
-        state.connection.status = 'reconnecting';
-        ui.updateConnectionStatus();
-
-        setTimeout(() => {
-            if (!state.isPaused) connectionManager.connect();
-        }, delay);
-    },
-
-    startHeartbeat: () => {
-        connectionManager.stopHeartbeat();
-        // Ping-Pong disabled for Binance
-    },
-
-    stopHeartbeat: () => {
-        if (state.connection.pingInterval) {
-            clearInterval(state.connection.pingInterval);
-            state.connection.pingInterval = null;
-        }
-        if (state.pauseTimer) {
-            clearInterval(state.pauseTimer);
-            state.pauseTimer = null;
-        }
-    },
-
-    // NEW METHOD: Stale Pair Checker
-    checkStalePairs: () => {
-        const STALE_THRESHOLD = 3600000; // 1 hour
-        const now = Date.now();
-        
-        state.data.forEach(pair => {
-            if (!pair.lastUpdated || (now - pair.lastUpdated > STALE_THRESHOLD)) {
-                fetch(`${CONFIG.api.futures}/ticker/24hr?symbol=${pair.symbol}`)
-                    .then(res => {
-                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                        return res.json();
-                    })
-                    .then(freshData => {
-                        if (freshData?.E && (!pair.lastUpdated || freshData.E > pair.lastUpdated)) {
-                            Object.assign(pair, {
-                                lastPrice: freshData.lastPrice,
-                                priceChangePercent: freshData.priceChangePercent,
-                                quoteVolume: freshData.quoteVolume,
-                                lastUpdated: freshData.E,
-                                hadUpdate: true
-                            });
-                            ui.renderTable();
-                        }
-                    })
-                    .catch(err => console.warn(`Stale refresh failed for ${pair.symbol}:`, err));
-            }
-        });
-    },
-
-    // NEW METHOD: Cleanup
-    cleanup: () => {
-        if (state.stalePairInterval) {
-            clearInterval(state.stalePairInterval);
-            state.stalePairInterval = null;
-        }
-    }
-};
-    // ===== DATA MANAGER =====
-    const dataManager = {
-        loadInitialData: async () => {
-            try {
-                //ui.showLoading('Loading market data...');
-                const response = await fetch(`${CONFIG.api.futures}/ticker/24hr`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+            state.socket.onmessage = (e) => {
+                if (abortController.signal.aborted) return;
+                try {
+                    const data = JSON.parse(e.data);
+                    state.connection.lastUpdate = Date.now();
+                    if (!state.isPaused) {
+                        dataManager.processMarketData(data);
+                    }
+                } catch (err) {
+                    console.error('Error parsing WebSocket message:', err);
                 }
-                
-                const marketData = await response.json();
-                state.data = marketData
-                    .filter(item => item.symbol.endsWith('USDT'))
-                    .sort((a, b) => b.quoteVolume - a.quoteVolume)
-                    .slice(0, CONFIG.defaults.totalPairs)
-                    .map(item => ({
-                        ...item,
-                        hadUpdate: false,
-                        updateDirection: null
-                    }));
+            };
 
-                ui.renderTable();
-            } catch (error) {
-                console.error('Initial data load failed:', error);
-                ui.showLoading('Data load failed - retrying...');
-                setTimeout(dataManager.loadInitialData, 5000);
+            state.socket.onclose = (e) => {
+                if (abortController.signal.aborted) return;
+                this.handleDisconnection();
+            };
+
+            state.socket.onerror = (e) => {
+                if (abortController.signal.aborted) return;
+                this.handleDisconnection();
+            };
+        },
+
+        handleDisconnection: function() {
+            if (state.isPaused) return;
+            state.connection.status = 'disconnected';
+            ui.updateConnectionStatus();
+            this.stopHeartbeat();
+            this.scheduleReconnection();
+        },
+
+        scheduleReconnection: function() {
+            state.connection.retryCount++;
+            const delay = Math.min(
+                CONFIG.connection.baseDelay * Math.pow(2, state.connection.retryCount),
+                CONFIG.connection.maxDelay
+            );
+
+            state.connection.status = 'reconnecting';
+            ui.updateConnectionStatus();
+
+            setTimeout(() => {
+                if (!state.isPaused) this.connect();
+            }, delay);
+        },
+
+        startHeartbeat: function() {
+            this.stopHeartbeat();
+        },
+
+        stopHeartbeat: function() {
+            if (state.connection.pingInterval) {
+                clearInterval(state.connection.pingInterval);
+                state.connection.pingInterval = null;
+            }
+            if (state.pauseTimer) {
+                clearInterval(state.pauseTimer);
+                state.pauseTimer = null;
             }
         },
+
+        checkStalePairs: function() {
+            const STALE_THRESHOLD = 3600000;
+            const now = Date.now();
+            
+            state.data.forEach(pair => {
+                if (!pair.lastUpdated || (now - pair.lastUpdated > STALE_THRESHOLD)) {
+                    fetch(`${CONFIG.api.futures}/ticker/24hr?symbol=${pair.symbol}`)
+                        .then(res => {
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                            return res.json();
+                        })
+                        .then(freshData => {
+                            if (freshData?.E && (!pair.lastUpdated || freshData.E > pair.lastUpdated)) {
+                                Object.assign(pair, {
+                                    lastPrice: freshData.lastPrice,
+                                    priceChangePercent: freshData.priceChangePercent,
+                                    quoteVolume: freshData.quoteVolume,
+                                    lastUpdated: freshData.E,
+                                    hadUpdate: true
+                                });
+                                ui.renderTable();
+                            }
+                        })
+                        .catch(err => console.warn(`Stale refresh failed for ${pair.symbol}:`, err));
+                }
+            });
+        },
+
+        cleanup: function() {
+            if (state.stalePairInterval) {
+                clearInterval(state.stalePairInterval);
+                state.stalePairInterval = null;
+            }
+        }
+    };
+    // ===== DATA MANAGER =====
+    const dataManager = {
+loadInitialData: async () => {
+    if (state.isLoading) return;
+    state.isLoading = true;
+    
+    try {
+    //  ui.showLoading('Loading market data...');
+        const response = await fetch(`${CONFIG.api.futures}/ticker/24hr`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const marketData = await response.json();
+        state.data = marketData
+            .filter(item => item.symbol.endsWith('USDT'))
+            .map(item => ({
+                ...item,
+                hadUpdate: false,
+                updateDirection: null
+            }));
+            
+        // Apply initial sort
+        state.data.sort((a, b) => b.quoteVolume - a.quoteVolume);
+        state.data = state.data.slice(0, CONFIG.defaults.totalPairs);
+        
+        ui.renderTable();
+    } catch (error) {
+        console.error('Initial data load failed:', error);
+        // Geo issues; VPN Required! 
+        ui.showLoading('Connect to VPN - retrying...');
+        setTimeout(dataManager.loadInitialData, 5000);
+    } finally {
+        state.isLoading = false;
+    }
+},
 
 processMarketData: (marketData) => {
     if (!Array.isArray(marketData)) return;
@@ -371,7 +379,126 @@ processMarketData: (marketData) => {
     ui.renderTable();
 }
 };
-    // ===== UI MANAGER =====
+    
+    
+// ===== DEBOUNCE HELPER =====
+function debounce(fn, delay) {
+    let timer;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+}
+
+// ===== SEARCH MANAGER =====
+const searchManager = {
+    init: function () {
+        // Keyboard shortcut to open search
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '/' && e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+                this.showSearch();
+            } else if (e.key === 'Escape' && elements.searchContainer.style.display === 'block') {
+                e.preventDefault();
+                this.hideSearch();
+            }
+        });
+
+        // Click outside to close
+        document.addEventListener('click', (e) => {
+            if (!elements.searchContainer.contains(e.target) &&
+                elements.searchContainer.style.display === 'block') {
+                this.hideSearch();
+            }
+        });
+
+        // Debounced search input
+        elements.searchInput.addEventListener('input', debounce((e) => {
+            const query = e.target.value.trim().toUpperCase();
+            if (!query) {
+                elements.searchResults.innerHTML = '';
+                return;
+            }
+
+            const filtered = state.data.filter(item =>
+                item.symbol.includes(query) ||
+                item.symbol.replace('USDT', '').includes(query)
+            ).slice(0, 10);
+
+            this.renderResults(filtered);
+        }, 300));
+    },
+
+    showSearch: function () {
+        elements.searchContainer.style.display = 'block';
+        elements.searchInput.focus();
+        elements.searchInput.value = '';
+        elements.searchResults.innerHTML = '';
+    },
+
+    hideSearch: function () {
+        elements.searchContainer.style.display = 'none';
+        elements.searchInput.value = '';
+        elements.searchResults.innerHTML = '';
+    },
+
+    renderResults: function (results) {
+        if (results.length === 0) {
+            elements.searchResults.innerHTML = '<div class="no-results">No matching pairs found</div>';
+            elements.searchResults.style.display = 'block';
+            return;
+        }
+
+        elements.searchResults.innerHTML = results.map(item => `
+            <div class="coin-item" data-symbol="${item.symbol}">
+                <div class="coin-content">
+                    <span class="pair-name">${item.symbol.replace('USDT', '')}/USDT</span>
+                    ${getPlatformIcons(item.symbol)}
+                </div>
+                <span class="price">${formatter.price(item.lastPrice, item.symbol)}</span>
+            </div>
+        `).join('');
+
+        elements.searchResults.style.display = 'block';
+
+        document.querySelectorAll('.coin-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const symbol = item.getAttribute('data-symbol');
+                searchManager.handleSelect(symbol);
+                this.hideSearch();
+            });
+        });
+    },
+
+    handleSelect: function (symbol) {
+        const isHighlighted = state.highlightedPairs[symbol]?.isHighlighted;
+        const row = document.querySelector(`tr[data-symbol="${symbol}"]`);
+
+        if (isHighlighted) {
+            // Scroll to the highlighted pair
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        } else {
+            // Not highlighted
+            if (!state.pinnedPairs.includes(symbol)) {
+                state.pinnedPairs.push(symbol);
+                localStorage.setItem('pinnedPairs', JSON.stringify(state.pinnedPairs));
+            }
+
+            ui.toggleHighlight(symbol); // This both highlights and copies price
+            ui.renderTable(() => {
+                const pinnedRow = document.querySelector(`tr[data-symbol="${symbol}"]`);
+                if (pinnedRow) {
+                    pinnedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        }
+    }
+};
+
+        
+// ===== UI MANAGER =====
 const ui = {
     // ===== LOADING INDICATOR =====
     showLoading: (message) => {
@@ -379,12 +506,18 @@ const ui = {
     },
 
     // ===== TABLE RENDERING =====
-    renderTable: (callback) => {
+    renderTable: (callback) => {    
         // Sort data
-        const sortedData = [...state.data];
-        if (state.sortDirection === 'volume-asc') {
-            sortedData.sort((a, b) => a.quoteVolume - b.quoteVolume);
-        }
+const sortedData = [...state.data];
+    if (state.sortDirection.volume === 'asc') {
+        sortedData.sort((a, b) => a.quoteVolume - b.quoteVolume);
+    } else if (state.sortDirection.volume === 'desc') {
+        sortedData.sort((a, b) => b.quoteVolume - a.quoteVolume);
+    } else if (state.sortDirection.change === 'asc') {
+        sortedData.sort((a, b) => parseFloat(a.priceChangePercent) - parseFloat(b.priceChangePercent));
+    } else if (state.sortDirection.change === 'desc') {
+        sortedData.sort((a, b) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent));
+}
 
         // Apply pinning
         const pinned = sortedData.filter(item => state.pinnedPairs.includes(item.symbol));
@@ -393,22 +526,25 @@ const ui = {
         
         // Generate table rows
 elements.tableBody.innerHTML = displayData.map((item, index) => {
+    const isPinned = state.pinnedPairs.includes(item.symbol);
     const isHighlighted = state.highlightedPairs[item.symbol];
     const updateClass = item.hadUpdate ? `update-${item.updateDirection}` : '';
     const changeClass = item.priceChangePercent >= 0 ? 'up' : 'down';
     
     return `
-    <tr data-symbol="${item.symbol}" class="${updateClass}">
-        <td class="${isHighlighted ? 'highlighted' : ''}">
+    <tr data-symbol="${item.symbol}" class="${updateClass} ${isPinned ? 'pinned-row' : ''}">
+        <td>
             ${index + 1}
         </td>
         <td>
             <span class="pin-icon" data-symbol="${item.symbol}">
-                ${state.pinnedPairs.includes(item.symbol) ? '📌' : '🔅'}
+                ${isPinned ? '📌' : '🔅'}
             </span>
-            ${item.symbol.replace('USDT', '')}/USDT
+            ${item.symbol.replace('USDT', '')}
         </td>
-        <td>${formatter.price(item.lastPrice, item.symbol)}</td>
+        <td class="${isHighlighted ? 'highlighted' : ''}">
+            ${formatter.price(item.lastPrice, item.symbol)}
+        </td>
         <td class="${changeClass}">
             ${formatter.change(item.priceChangePercent)}
         </td>
@@ -420,18 +556,36 @@ elements.tableBody.innerHTML = displayData.map((item, index) => {
         elements.loadingIndicator.textContent = '';
         ui.attachRowEvents();
         
-            // Update highlight timers for all highlighted pairs
-    Object.keys(state.highlightedPairs).forEach(symbol => {
+// ===== NEW SORT INDICATORS CODE =====
+const volumeHeader = document.getElementById('sortHeader');
+const changeHeader = document.getElementById('changeHeader');
+
+// Clear all active states
+volumeHeader.classList.remove('sort-active');
+changeHeader.classList.remove('sort-active');
+
+if (state.sortDirection.volume) {
+    volumeHeader.classList.add('sort-active');
+    volumeHeader.querySelector('.sort-indicator').textContent = 
+        state.sortDirection.volume === 'desc' ? '↓' : '↑';
+    changeHeader.querySelector('.sort-indicator').textContent = '';
+} 
+else if (state.sortDirection.change) {
+    changeHeader.classList.add('sort-active');
+    changeHeader.querySelector('.sort-indicator').textContent = 
+        state.sortDirection.change === 'desc' ? '↓' : '↑';
+    volumeHeader.querySelector('.sort-indicator').textContent = '';
+}
+else {
+    volumeHeader.querySelector('.sort-indicator').textContent = '';
+    changeHeader.querySelector('.sort-indicator').textContent = '';
+}
+        //==Update highlight timers for all highlighted pairs==
+        Object.keys(state.highlightedPairs).forEach(symbol => {
         if (state.highlightedPairs[symbol]?.isHighlighted) {
             ui.updateHighlightTimer(symbol);
         }
-    });
-    
-    // Execute callback after render is complete
-    if (callback && typeof callback === 'function') {
-        setTimeout(callback, 0);
-    }
-        
+    });        
         // Execute callback after render is complete
         if (callback && typeof callback === 'function') {
             setTimeout(callback, 0);
@@ -442,13 +596,27 @@ attachRowEvents: () => {
     document.querySelectorAll('#data tr').forEach(row => {
         row.addEventListener('click', (e) => {
             const symbol = row.getAttribute('data-symbol');
+            const target = e.target;
             
-            if (e.target.classList.contains('pin-icon')) {
+            // Click on pin icon - toggle pin
+            if (target.classList.contains('pin-icon')) {
                 ui.togglePin(symbol);
-            } else if (e.target.closest('td:nth-child(3)')) {
-                // Clicked on price cell
+            } 
+            // Click on price cell (3rd column) - highlight and copy
+            else if (target.closest('td:nth-child(3)')) {
                 ui.toggleHighlight(symbol, true);
-            } else {
+            }
+            // Click on pair name cell (2nd column) - toggle pin
+            else if (target.closest('td:nth-child(2)')) {
+                ui.togglePin(symbol);
+            }
+            // Click on # column (1st column) - toggle pin
+            else if (target.closest('td:nth-child(1)')) {
+                ui.togglePin(symbol);
+            }
+            // Explicitly ignore clicks on 4th and 5th columns
+            else if (!target.closest('td:nth-child(4)') && !target.closest('td:nth-child(5)')) {
+                // Only highlight if clicking row background (not any specific cell)
                 ui.toggleHighlight(symbol);
             }
         });
@@ -510,37 +678,42 @@ toggleHighlight: (symbol, fromPriceClick = false) => {
     ui.renderTable();
 },
 
+    // 24H Volume [$DollarChange | Timer]
 updateHighlightTimer: (symbol) => {
     const row = document.querySelector(`tr[data-symbol="${symbol}"]`);
     if (!row) return;
-    
+
     const highlightData = state.highlightedPairs[symbol];
     if (!highlightData) return;
-    
+
     const currentItem = state.data.find(item => item.symbol === symbol);
     if (!currentItem) return;
-    
+
     const currentPrice = parseFloat(currentItem.lastPrice);
     const secondsElapsed = Math.floor((Date.now() - highlightData.highlightTime) / 1000);
-    const dollarChange = formatter.dollarChange(currentPrice, highlightData.highlightPrice, symbol); // Added symbol parameter
-    const timerText = formatter.timer(secondsElapsed);
-    
-    // Update the volume cell
+    const dollarChange = formatter.dollarChange(currentPrice, highlightData.highlightPrice, symbol);
+    const fullTimerText = new Date(secondsElapsed * 1000).toISOString().substr(11, 8);
+
+    // Pad both values for alignment (same logic, no inline style)
+    const paddedChange = dollarChange.text.padEnd(11, ' ');
+    const paddedTimer = fullTimerText.padStart(9, ' ');
+
     const volumeCell = row.querySelector('td:nth-child(5)');
     if (volumeCell) {
         const originalVolume = formatter.volume(currentItem.quoteVolume);
         volumeCell.innerHTML = `
-            <span class="volume-container">
+            <span class="volume-container monospace">
                 <span class="volume-value">${originalVolume}</span>
                 <span class="highlight-container">
-                    [<span class="${dollarChange.colorClass}">${dollarChange.text}</span> 
-                    <span class="highlight-separator">|</span> 
-                    <span class="highlight-timer">${timerText}</span>]
+                    [<span class="dollar-change ${dollarChange.colorClass}">${paddedChange}</span>
+                    <span class="highlight-separator">|</span>
+                    <span class="highlight-timer">${paddedTimer}</span> ]
                 </span>
             </span>
         `;
     }
 },
+
 
     // ===== NOTIFICATION SYSTEM =====
     showTempMessage: function(message, duration = 2000) {
@@ -569,7 +742,7 @@ updateConnectionStatus: () => {
         'connecting': ['🟡', 'connecting...'],
         'reconnecting': ['🟠', `Retrying (${state.connection.retryCount + 1})`],
         'error': ['⚠️', 'Error'],
-        'paused': ['⏸️', 'Paused']
+        'paused': ['⏸️', 'P']
     };
 
     const status = state.isPaused ? 'paused' : state.connection.status;
@@ -633,7 +806,6 @@ updateFavicon: (status) => {
     setupControls: () => {
         // Set default visible pairs
         state.visibleCount = 20;
-
         // Pair visibility controls
         const showMorePairs = () => {
             const previousCount = state.visibleCount;
@@ -677,16 +849,16 @@ updateFavicon: (status) => {
                             behavior: 'smooth'
                         });
                     }
-                    ui.showTempMessage(`Showing ${state.visibleCount} pairs`);
+                    // ui.showTempMessage(`Showing ${state.visibleCount} pairs`); // Just message "Showing 5 pairs"
                 });
             }
         };
 
         // Button event listeners
         elements.pauseButton.addEventListener('click', function() {
-    state.isPaused = !state.isPaused;
-    this.textContent = state.isPaused ? 'Resume' : 'Pause';
+            state.isPaused = !state.isPaused;
             
+            this.textContent = state.isPaused ? 'R' : 'P'; // PAUSE, PAUSED, RESUME, RESUME
             if (state.isPaused) {
                 state.pauseStartTime = Date.now();
                 state.connection.status = 'paused';
@@ -705,17 +877,18 @@ updateFavicon: (status) => {
             ui.updateConnectionStatus();
         });
 
-        elements.refreshButton.addEventListener('click', () => {
-            if (!state.isPaused) {
-                dataManager.loadInitialData();
-                connectionManager.connect();
-            }
-            ui.updateConnectionStatus();
-        });
+elements.refreshButton.addEventListener('click', () => {
+    if (!state.isPaused && !state.isLoading) {
+        dataManager.loadInitialData();
+        state.connection.status = 'connected';
+        ui.updateConnectionStatus();
+    }
+});
 
         elements.showMoreButton.addEventListener('click', showMorePairs);
 
         // Keyboard shortcuts
+// Keyboard shortcuts (keep this as is)
 document.addEventListener('keydown', (e) => {
     // Ignore spacebar if typing in inputs
     if (e.target.tagName === 'INPUT' || document.querySelector('.search-container.active')) {
@@ -726,10 +899,10 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         // Directly toggle pause state instead of simulating click
         state.isPaused = !state.isPaused;
-        elements.pauseButton.textContent = state.isPaused ? 'Resume' : 'Pause';
+        elements.pauseButton.textContent = state.isPaused ? 'R' : 'P'; // PAUSE, PAUSED, RESUME, RESUME
         
         if (state.isPaused) {
-            state.pauseStartTime = Date.now(); // Add this line
+            state.pauseStartTime = Date.now();
             connectionManager.stopHeartbeat();
             
             // Start the pause timer
@@ -752,12 +925,41 @@ document.addEventListener('keydown', (e) => {
     else if (e.key === 'l' || e.key === 'L') showLessPairs();
 });
 
-        // Sort control
-        elements.sortHeader.addEventListener('click', () => {
-            state.sortDirection = state.sortDirection === 'volume-desc' 
-                ? 'volume-asc' 
-                : 'volume-desc';
-            ui.renderTable();
+
+const upControl = document.querySelector('.mobile-control.up');
+const downControl = document.querySelector('.mobile-control.down');
+
+if (upControl && downControl) {
+    upControl.addEventListener('click', showLessPairs);
+    downControl.addEventListener('click', showMorePairs);
+} 
+        
+
+    // Volume sort control
+elements.sortHeader.addEventListener('click', function(e) {
+    // Only trigger sort if clicking on the volume text (not buttons)
+    if (e.target.closest('.volume-text') || 
+        (!e.target.closest('.header-buttons') && !e.target.closest('button'))) {
+        
+        // Original sort logic
+        if (!state.sortDirection.volume) {
+            state.sortDirection = { volume: 'desc', change: null };
+        } else {
+            state.sortDirection.volume = state.sortDirection.volume === 'desc' ? 'asc' : null;
+        }
+        ui.renderTable();
+    }
+});
+
+    // 24H % Change sort control - NEW CODE
+    document.getElementById('changeHeader').addEventListener('click', () => {
+        // Toggle change sorting (desc → asc → none → desc...)
+        if (!state.sortDirection.change) {
+            state.sortDirection = { volume: null, change: 'desc' };
+        } else {
+            state.sortDirection.change = state.sortDirection.change === 'desc' ? 'asc' : null;
+        }
+        ui.renderTable();
         });
     }
 };
@@ -775,12 +977,29 @@ window.addEventListener('beforeunload', () => {
 
 
 // ===== INITIALIZATION =====
-const init = () => {
-    // Set initial title (using default loading state)
-    document.title = "🟡 • Loading...";
-    ui.setupControls();
-    connectionManager.connect();
-};
+    const init = () => {
+        document.title = "🟡 • Loading...";
+        ui.setupControls();
+        connectionManager.connect();
+        searchManager.init();
+    };
+    // Cleanup
+    window.addEventListener('beforeunload', () => {
+        // Clear highlight timers
+        Object.keys(state.highlightTimers).forEach(symbol => {
+            clearInterval(state.highlightTimers[symbol]);
+        });
+        state.highlightTimers = {};
+
+        // Cleanup connection
+        connectionManager.cleanup();
+        if (state.abortController) {
+            state.abortController.abort();
+        }
+        if (state.pauseTimer) {
+            clearInterval(state.pauseTimer);
+        }
+    });
 
     init();
 });

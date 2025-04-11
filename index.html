@@ -11,148 +11,189 @@
     <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&display=swap"></noscript>
-<link 
-  href="./fonts/oxanium.woff2" 
-  type="font/woff2" 
-  crossorigin="anonymous"
->    
+    <link href="./fonts/oxanium.woff2" type="font/woff2" crossorigin="anonymous">
 </head>
     
 <body>
     <div id="app">
+        <!-- Search Container -->
         <div class="search-container" style="display: none;">
             <input type="text" id="searchInput" placeholder="Search any USDT pair (Spot or Futures)...">
             <div id="searchResults"></div>
         </div>
         
-<div class="header-container">
-    <div id="tradingview-widget-container" class="tradingview-widget-container" style="display: none; margin-top: 8px;">
-            <div class="tradingview-widget-container__widget"></div>
+        <!-- Header with TradingView Widget -->
+        <div class="header-container">
+            <div id="tradingview-widget-container" class="tradingview-widget-container" style="display: none; margin-top: 8px;">
+                <div class="tradingview-widget-container__widget"></div>
+            </div>
         </div>
-    <div class="header-buttons">
-        <button id="pauseButton" class="header-button">Pause</button>
-        <button id="settingsButton" class="header-button" title="Visual settings"><i class="fas fa-cog"></i></button>
-        <button id="refreshButton" class="refresh-button" title="Refresh prices">R</button>
-        <div class="connection-indicator" id="connectionIndicator"></div>
-        <button id="TVScreen" class="tv-screen" title="TravindView Screen">T</button>
-    </div>
-</div>
-        <!-- TradingView Widget Under Pause and other Icons -->
-        <!--<div id="tradingview-widget-container" class="tradingview-widget-container" style="display: none; margin-top: 8px;">
-            <div class="tradingview-widget-container__widget"></div>
-        </div>-->
         
-        <div id="loading"></div>
+        <!-- Main Table -->
         <table>
             <thead>
                 <tr>
                     <th>#</th>
                     <th>USDT.P</th>
                     <th>Price</th>
-                    <th>24H % Change</th>
-                    <th id="sortHeader">24H Volume <span class="sort-indicator">↓</span></th>
+                    <th id="changeHeader">24H %<span class="sort-indicator"></span></th>
+                <th id="sortHeader">
+                    <div class="volume-header-container">
+                        <span class="volume-text">24H Volume <span class="sort-indicator">↓</span></span>
+                        <div class="header-buttons">
+                                <!-- Loading Indicator -->
+                                <div id="loading"></div>
+                                <div class="connection-indicator" id="connectionIndicator"></div>
+                                <button id="pauseButton" class="header-button">P</button>
+                                <!--Refresh Button-->
+                                <button id="refreshButton" class="refresh-button" title="Refresh">
+                                    <svg class="reload-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f0b90b" stroke-width="2.5" stroke-linecap="round">
+                                        <path d="M23 4v6h-6M1 20v-6h6"/>
+                                        <path d="M3.5 9a9 9 0 0 1 14-5.5L23 10M1 14l4.5 4.5A9 9 0 0 0 20.5 15"/>
+                                    </svg>
+                                </button>
+                                <button id="TVScreen" class="tv-screen" title="TradingView Screen">T</button>
+                    <button id="themeToggle" class="theme-toggle-button" title="Toggle Light/Dark Mode">
+                        <i class="fas fa-moon"></i></button>
+                                <button id="settingsButton" class="header-button" title="Visual settings"><i class="fas fa-cog"></i></button>
+                                <!--Fear & Greed Gauge-->
+                                <div id="fearGreedGauge" class="gauge-container">
+                                    <svg viewBox="0 0 100 60" class="gauge-svg">
+                                        <defs>
+                                            <linearGradient id="gaugeGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                                                <stop offset="0%" stop-color="#e74c3c" />
+                                                <stop offset="50%" stop-color="#f1c40f" />
+                                                <stop offset="100%" stop-color="#2ecc71" />
+                                            </linearGradient>
+                                        </defs>
+                                        <line id="needle" x1="50" y1="50" x2="50" y2="20" stroke="#333" stroke-width="1" stroke-linecap="round" />
+                                        <circle cx="50" cy="50" r="3" fill="#333" />
+                                        <path d="M10,50 A40,40 0 0,1 90,50" stroke="url(#gaugeGradient)" stroke-width="10" fill="none" />
+                                        <circle cx="50" cy="50" r="2" class="center-dot" />
+                                        <text id="valueText" x="50" y="40" class="value-text">--</text>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </th>
                 </tr>
             </thead>
             <tbody id="data"></tbody>
         </table>
+        
+        <!-- Mobile Controls -->
+        <div class="mobile-pair-controls">
+            <button class="mobile-control up" title="Show less">
+                <i class="fas fa-chevron-up"></i>
+            </button>
+            <button class="mobile-control down" title="Show more">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        
+        <!-- Show More Button -->
         <div class="show-more-container">
             <button id="showMoreButton" class="show-more-button">Show More</button>
         </div>
         
-        <!-- Visual Feedback Settings Panel -->
-<div id="visualSettingsPanel" class="settings-panel" style="display: none;">
-    <div class="settings-header">
-        <h3>Visual Feedback Settings</h3>
-        <button class="close-settings">&times;</button>
-    </div>
-    <div class="settings-content">
-        <div class="setting-item">
-            <label>
-                <input type="checkbox" id="toggleVisualFeedback" checked>
-            </label>
-        </div>
-        <div class="setting-item">
-            <div style="display: flex; align-items: center;">
-                <input type="range" id="animationDuration" min="500" max="3000" value="1500" step="100">
-                <span id="durationValue">1500ms</span>
+        <!-- Settings Panel -->
+        <div id="visualSettingsPanel" class="settings-panel" style="display: none;">
+            <div class="settings-header">
+                <h3>Settings</h3>
+                <button class="close-settings">&times;</button>
+            </div>
+            <div class="settings-content">
+
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="toggleVisualFeedback" checked>
+                        Enable Visual Feedback
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>Animation Duration:</label>
+                    <div style="display: flex; align-items: center;">
+                        <input type="range" id="animationDuration" min="500" max="3000" value="1500" step="100">
+                        <span id="durationValue">1500ms</span>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <label>Up Color:</label>
+                    <input type="color" id="upColorPicker" value="#0ecb81">
+                </div>
+                <div class="setting-item">
+                    <label>Down Color:</label>
+                    <input type="color" id="downColorPicker" value="#f6465d">
+                </div>
             </div>
         </div>
-        <div class="setting-item">
-            <label>Up ↑:</label>
-            <input type="color" id="upColorPicker" value="#0ecb81">
-        </div>
-        <div class="setting-item">
-            <label>Down ↓:</label>
-            <input type="color" id="downColorPicker" value="#f6465d">
-        </div>
-    </div>
-</div>
         
+        <!-- Pair Detail Modal -->
         <div id="pair-detail-modal" class="pair-detail-modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="pair-title"></h3>
-            <span class="close-modal">&times;</span>
-        </div>
-<div class="modal-body">
-    <div class="pair-stats">
-        <div class="stat-item">
-            <span class="stat-label">Price</span>
-            <span id="pair-price" class="stat-value"></span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">24H High</span>
-            <span id="pair-high" class="stat-value"></span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">24H Low</span>
-            <span id="pair-low" class="stat-value"></span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">24H Volume</span>
-            <span id="pair-volume" class="stat-value"></span>
-        </div>
-        
-        <div class="stat-item change-box">
-            <span class="stat-label">24H Change</span>
-            <div id="pair-24h-change" class="change-values">
-                <span class="change-percent"></span>
-                <span class="change-amount"></span>
-            </div>
-        </div>
-        <div class="stat-item change-box">
-            <span class="stat-label">12H Change</span>
-            <div id="pair-12h-change" class="change-values">
-                <span class="change-percent"></span>
-                <span class="change-amount"></span>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="pair-title"></h3>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="pair-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Price</span>
+                            <span id="pair-price" class="stat-value"></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">24H High</span>
+                            <span id="pair-high" class="stat-value"></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">24H Low</span>
+                            <span id="pair-low" class="stat-value"></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">24H Volume</span>
+                            <span id="pair-volume" class="stat-value"></span>
+                        </div>
+                        <div class="stat-item change-box">
+                            <span class="stat-label">24H Change</span>
+                            <div id="pair-24h-change" class="change-values">
+                                <span class="change-percent"></span>
+                                <span class="change-amount"></span>
+                            </div>
+                        </div>
+                        <div class="stat-item change-box">
+                            <span class="stat-label">12H Change</span>
+                            <div id="pair-12h-change" class="change-values">
+                                <span class="change-percent"></span>
+                                <span class="change-amount"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="platform-links">
+                        <a href="#" class="platform-link binance" target="_blank">
+                            <img src="icons/binance.png" alt="Binance" width="20" height="20">
+                        </a>
+                        <a href="#" class="platform-link bybit" target="_blank">
+                            <img src="icons/bybit.png" alt="Bybit" width="20" height="20">
+                        </a>
+                        <a href="#" class="platform-link gateio" target="_blank">
+                            <img src="icons/gateio.png" alt="Gate.io" width="20" height="20">
+                        </a>
+                        <a href="#" class="platform-link tradingview" target="_blank">
+                            <img src="icons/tradingview.png" alt="TradingView" width="20" height="20">
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-            <div class="platform-links">
-                <a href="#" class="platform-link binance" target="_blank">
-                    <img src="icons/binance.png" alt="Binance" width="20" height="20">
-                </a>
-                <a href="#" class="platform-link bybit" target="_blank">
-                    <img src="icons/bybit.png" alt="Bybit" width="20" height="20">
-                </a>
-                <a href="#" class="platform-link gateio" target="_blank">
-                    <img src="icons/gateio.png" alt="Gate.io" width="20" height="20">
-                </a>
-                <a href="#" class="platform-link tradingview" target="_blank">
-                    <img src="icons/tradingview.png" alt="TradingView" width="20" height="20">
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-        
-    </div>
-<!-- Defer non-critical scripts -->
-<script src="src/js/icons.js" defer></script>
-<script src="src/js/search.js" defer></script>
-<script src="src/js/fg-index.js" defer></script>
-<script src="src/js/feedback.js" defer></script>
-<script src="src/js/tv-widget.js" defer></script>
-<script src="src/js/main.js" defer></script>
+
+    <!-- Scripts -->
+    <script src="src/js/icons.js" defer></script>
+    <script src="src/js/search.js" defer></script>
+    <script src="src/js/fg-index.js" defer></script>
+    <script src="src/js/feedback.js" defer></script>
+    <script src="src/js/tv-widget.js" defer></script>
+    <script src="src/js/main.js" defer></script>
+    <script src="src/js/theme.js" defer></script>
 </body>
 </html>

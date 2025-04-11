@@ -3,31 +3,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const tvContainer = document.getElementById('tradingview-widget-container');
     const tvWidget = document.querySelector('.tradingview-widget-container__widget');
 
-    // Load saved state
-    if (localStorage.getItem('tvWidgetVisible') === 'true') {
-        tvContainer.style.display = 'block';
-        loadTradingViewWidget();
+    // Initialize widget state
+    function initWidgetState() {
+        const isVisible = localStorage.getItem('tvWidgetVisible') === 'true';
+        tvContainer.style.display = isVisible ? 'block' : 'none';
+        if (isVisible) loadTradingViewWidget();
     }
 
     // Toggle visibility
-    tvButton.addEventListener('click', function() {
-        if (tvContainer.style.display === 'none') {
-            tvContainer.style.display = 'block';
-            localStorage.setItem('tvWidgetVisible', 'true');
+    function toggleTradingView() {
+        const isVisible = tvContainer.style.display === 'none';
+        tvContainer.style.display = isVisible ? 'block' : 'none';
+        localStorage.setItem('tvWidgetVisible', isVisible);
+        
+        if (isVisible && !window.tvScriptLoaded) {
             loadTradingViewWidget();
-        } else {
-            tvContainer.style.display = 'none';
-            localStorage.setItem('tvWidgetVisible', 'false');
         }
-    });
-
-    // Keyboard shortcut (T key)
-    document.addEventListener('keydown', function(e) {
-        if ((e.key === 't' || e.key === 'T') && !e.target.matches('input, textarea')) {
-            e.preventDefault();
-            tvButton.click();
-        }
-    });
+    }
 
     // Load TradingView widget
     function loadTradingViewWidget() {
@@ -37,8 +29,8 @@ document.addEventListener('DOMContentLoaded', function() {
             script.async = true;
             script.innerHTML = JSON.stringify({
                 "symbols": [
+                    { "proName": "TVC:DXY", "title": "USD Index" },
                     { "proName": "FOREXCOM:SPXUSD", "title": "S&P 500" },
-                    { "proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100" },
                     { "proName": "FX_IDC:EURUSD", "title": "EUR/USD" },
                     { "proName": "FX:AUDUSD", "title": "AUD/USD" },
                     { "proName": "FX:USDJPY", "title": "USD/JPY" },
@@ -46,7 +38,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     { "proName": "BITSTAMP:BTCUSD", "title": "Bitcoin" },
                     { "proName": "BITSTAMP:ETHUSD", "title": "Ethereum" },
                     { "proName": "OANDA:XAUUSD", "title": "Gold" },
-                    { "proName": "NASDAQ:NVDA", "title": "NVIDIA" },
                     { "proName": "NASDAQ:TSLA", "title": "Tesla" },
                 ],
                 "showSymbolLogo": true,
@@ -59,4 +50,22 @@ document.addEventListener('DOMContentLoaded', function() {
             window.tvScriptLoaded = true;
         }
     }
+
+    // Button click handler
+    tvButton.addEventListener('click', toggleTradingView);
+
+    // Single keyboard shortcut handler
+    document.addEventListener('keydown', function(e) {
+        if (e.key.toLowerCase() === 't' && !e.target.matches('input, textarea, [contenteditable]')) {
+            e.preventDefault();
+            toggleTradingView();
+            
+            // Visual feedback
+            tvButton.classList.add('active');
+            setTimeout(() => tvButton.classList.remove('active'), 200);
+        }
+    });
+
+    // Initialize
+    initWidgetState();
 });
