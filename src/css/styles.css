@@ -299,7 +299,7 @@ tr:hover {
 }
 
 .connection-indicator {
-	background: #2a2f3d;
+	background: transparent;
 	/* Default background */
 	/*color: #f0b90b;*/
 	/* Default text color */
@@ -421,17 +421,37 @@ tr:hover {
     left: 50%;
     transform: translateX(-50%);
     width: 400px; /* Reduced from 80% to fixed width */
-    max-width: 90%; /* Ensure it doesn't overflow on mobile */
+    max-width: 80%; /* Ensure it doesn't overflow on mobile */
     z-index: 1000;
     background: #2a2f3d;
-    padding: 12px;
+    padding: 10px;
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
     border: 1px solid #3a3f4d;
     display: none;
 }
-
-
+/* Search button specific styles */
+#searchButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    cursor: pointer;
+}
+#searchButton:hover {
+    background: transparent;
+}
+/* Make sure Font Awesome icons are properly sized */
+#searchButton i {
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 /* Search Input */
 #searchInput {
     width: 100%;
@@ -445,14 +465,11 @@ tr:hover {
     transition: all 0.2s;
     margin-bottom: 8px;
 }
-
 #searchInput:focus {
     border-color: #f0b90b;
     outline: none;
     box-shadow: 0 0 0 2px rgba(240, 185, 11, 0.2);
 }
-
-
 /* Search Results */
 #searchResults {
     max-height: 60vh;
@@ -461,29 +478,52 @@ tr:hover {
     background: #1a1e27;
     border: 1px solid #3a3f4d;
     display: none;
+	
+}
+#searchButton::after {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2a2f3d;
+    color: #f0b90b;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    white-space: nowrap;
 }
 
-/* Pair Name */
+#searchButton:hover::after {
+    opacity: 1;
+}
+/* Pair Name - Left aligned */
 .pair-name {
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: left;
+    min-width: 80px; /* Prevent squeezing */
 }
-
-
 /* Coin Item Layout */
 .coin-item {
-    padding: 10px 12px;
-    cursor: pointer;
-    border-bottom: 1px solid #2a2f3d;
     display: grid;
-    grid-template-columns: 1fr auto auto; /* Pair name | Icons | Price */
+    grid-template-columns: minmax(120px, 1fr) auto minmax(80px, auto);
     align-items: center;
-    gap: 12px;
-    transition: background 0.2s;
+    gap: 8px;
+    width: 100%;
+	cursor: pointer;
+    padding: 8px 12px;
+    outline: none;
+    transition: background-color 0.2s;
 }
-
+.coin-item:focus {
+    outline: 1px solid #f0b90b;
+    background-color: #3a3f4d;
+}
 .coin-item:hover,
 .coin-item.selected {
 	background: #3a3f4d;
@@ -493,15 +533,30 @@ tr:hover {
     align-items: center;
     gap: 8px;
 }
-
-/* Price */
+/* Price - Right aligned */
 .price {
     font-family: 'Oxanium', monospace;
     color: #f0b90b;
     font-size: 13px;
-    justify-self: end;
-    min-width: 80px;
     text-align: right;
+    white-space: nowrap;
+    min-width: 80px; /* Prevent price from shifting */
+    padding-left: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .coin-item {
+        grid-template-columns: 1fr auto;
+    }
+    .price {
+        grid-column: 1 / -1;
+        text-align: left;
+        padding-left: 0;
+    }
+    .platform-icons {
+        justify-content: flex-end;
+    }
 }
 
 /* No Results */
@@ -509,27 +564,37 @@ tr:hover {
     padding: 16px;
     text-align: center;
     color: #8a8a8a;
-    font-size: 13px;
+    font-size: 10px;
 }
-
-/* Responsive Adjustments */
+.no-results small {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+/* Responsive adjustments */
 @media (max-width: 500px) {
-    .search-container {
-        width: 95%;
-        top: 20px;
-    }
-    
     .coin-item {
         grid-template-columns: 1fr auto;
-        gap: 8px;
     }
-    
     .price {
         grid-column: 1 / -1;
-        text-align: left;
-        padding-left: 8px;
-        color: #eaeaea;
+        text-align: right;
+        padding-left: 0;
     }
+    .platform-icons {
+        justify-content: center;
+    }
+}
+/* Improve no-results styling */
+.no-results {
+    padding: 16px;
+    text-align: center;
+    color: #8a8a8a;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 .no-results {
@@ -557,12 +622,33 @@ tr:hover {
 }
 
 /* Platform Icons */
-/* Platform Icons */
 .platform-icons {
     display: flex;
     gap: 6px;
-    justify-self: end;
+    justify-content: center;
+    flex-wrap: nowrap;
+    min-width: 100px; /* Fixed width for icon container */
 }
+
+.platform-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.platform-icon img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    transition: all 0.2s ease;
+    opacity: 0.8;
+}
+
+.platform-icon:hover img {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
 .platform-icons img {
     width: 18px;
     height: 18px;
@@ -1207,13 +1293,12 @@ tr:hover {
 	top: 0;
 	bottom: 0;
 	width: 3px;
-	background-color: #f0b90b;
+	background-color: mediumorchid;
 }
 
 
 
 /* Theme Toggle Button */
-
 .theme-toggle-container {
     grid-column: span 2; /* Make theme toggle span full width */
     display: flex;
@@ -1293,101 +1378,6 @@ body.light-theme .fa-moon {
 	display: none;
 }
 
-/* Start of Mobile ShowMore/Less pair controls */
-.mobile-pair-controls {
-	position: fixed;
-	right: 100px;
-	bottom: 20px;
-	display: flex;
-	flex-direction: column;
-	gap: 15px;
-	z-index: 100;
-}
-
-.mobile-control {
-	width: 35px;
-	height: 35px;
-	border-radius: 35%;
-	background: #2a2f3d;
-	border: 1px solid #f0b90b;
-	color: #f0b90b;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	cursor: pointer;
-	transition: all 0.2s;
-}
-
-.mobile-control:hover {
-	background: #3a3f4d;
-	transform: scale(1.1);
-}
-
-/* Show only on phones and tablets */
-@media (max-width: 1024px) {
-
-	/* Adjust breakpoint as needed */
-	.mobile-pair-controls {
-		display: flex;
-		position: fixed;
-		right: 10px;
-		bottom: 20px;
-		/* Adjust vertical position */
-		flex-direction: column;
-		gap: 15px;
-		z-index: 100;
-	}
-
-	.mobile-control {
-		width: 35px;
-		height: 35px;
-		border-radius: 35%;
-		background: #2a2f3d;
-		border: 1px solid #f0b90b;
-		color: #f0b90b;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
-	.mobile-control:hover {
-		background: #3a3f4d;
-		transform: scale(1.1);
-	}
-}
-
-/* Hide on desktop */
-@media (min-width: 768px) {
-	.mobile-pair-controls {
-		display: none;
-	}
-}
-
-/* Optional: Fine-tune for different device sizes */
-@media (max-width: 768px) {
-
-	/* Phones and small tablets */
-	.mobile-pair-controls {
-		bottom: 50px;
-		/* Higher position on smaller screens */
-	}
-}
-
-@media (max-width: 480px) {
-
-	/* Small phones */
-	.mobile-control {
-		width: 40px;
-		height: 40px;
-		/* Slightly smaller on very small screens */
-	}
-}
-
-/* End of Mobile ShowMore/Less pair controls */
-
-
 /* Gauge Styles */
 .gauge-container {
 	width: 50px;
@@ -1453,7 +1443,6 @@ body.light-theme .fa-moon {
 	fill: #2ecc71 !important;
 	filter: drop-shadow(0 0 2px #2ecc71);
 }
-
 /*End of GAUGE*/
 
 
@@ -1483,3 +1472,111 @@ table::-webkit-scrollbar,
 }
 /* End of Hide scrollbar but keep functionality */
 
+
+/* Touch feedback for mobile */
+button.touch-active {
+    transform: scale(0.95);
+    opacity: 0.9;
+    transition: transform 0.1s, opacity 0.1s;
+}
+
+/* Hover effects for desktop */
+.desktop button:hover {
+    background: #3a3f4d;
+    transform: scale(1.05);
+}
+
+/* Remove tap highlight on mobile */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+
+
+/* Mobile Controls Container */
+.mobile-controls-container {
+    position: fixed;
+    right: 5px;
+    bottom: 20px;
+    display: none;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 1000;
+}
+
+/* Controls Box */
+.mobile-controls-box {
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: none;
+}
+
+/* Arrows Box */
+.mobile-arrows-box {
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: none;
+}
+
+/* Control Buttons */
+.mobile-control-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid #f0b90b;
+    color: #f0b90b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+/* Arrow Buttons */
+.mobile-arrow {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #2a2f3d;
+    border: 1px solid #f0b90b;
+    color: #f0b90b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 15px;
+    transition: all 0.2s;
+	pointer-events: auto !important; /* Ensure buttons are clickable */
+    user-select: none; /* Prevent text selection when tapping */
+}
+
+/* Show only on mobile/tablet */
+@media (max-width: 1024px) {
+    .mobile-controls-container {
+        display: flex;
+    }
+    
+    /* Hide desktop buttons except search, status, gauge */
+    .header-buttons > *:not(#searchButton):not(#connectionIndicator):not(#fearGreedGauge) {
+        display: none;
+    }
+}
+
+/* Hide completely on desktop */
+@media (min-width: 1025px) {
+    .mobile-controls-container {
+        display: none !important;
+    }
+}

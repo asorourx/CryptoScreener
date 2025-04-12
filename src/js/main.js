@@ -58,6 +58,7 @@ const state = {
     // ===== DOM ELEMENTS =====
     const elements = {
         tableBody: document.getElementById('data'),
+        searchButton: document.getElementById('searchButton'),
         loadingIndicator: document.getElementById('loading'),
         pauseButton: document.getElementById('pauseButton'),
         refreshButton: document.getElementById('refreshButton'),
@@ -392,83 +393,166 @@ function debounce(fn, delay) {
 
 // ===== SEARCH MANAGER =====
 const searchManager = {
-    init: function () {
-        // Keyboard shortcut to open search
-        document.addEventListener('keydown', (e) => {
-            if (e.key === '/' && e.target.tagName !== 'INPUT') {
-                e.preventDefault();
-                this.showSearch();
-            } else if (e.key === 'Escape' && elements.searchContainer.style.display === 'block') {
-                e.preventDefault();
-                this.hideSearch();
-            }
-        });
+init: function () {
+    // Keyboard shortcut to open search
+    document.addEventListener('keydown', (e) => {
+        // Only trigger search shortcut if not already in search input
+        if (e.key === '/' && document.activeElement !== elements.searchInput) {
+            e.preventDefault();
+            this.showSearch();
+            elements.searchInput.focus();
+        }
+        
+        // Close search with Escape
+        if (e.key === 'Escape' && elements.searchContainer.classList.contains('active')) {
+            e.preventDefault();
+            this.hideSearch();
+        }
+    });
 
-        // Click outside to close
-        document.addEventListener('click', (e) => {
-            if (!elements.searchContainer.contains(e.target) &&
-                elements.searchContainer.style.display === 'block') {
-                this.hideSearch();
-            }
-        });
+    // Click outside to close
+    document.addEventListener('click', (e) => {
+        if (!elements.searchContainer.contains(e.target) && 
+            e.target !== elements.searchButton &&
+            elements.searchContainer.classList.contains('active')) {
+            this.hideSearch();
+        }
+    });
 
-        // Debounced search input
-        elements.searchInput.addEventListener('input', debounce((e) => {
-            const query = e.target.value.trim().toUpperCase();
-            if (!query) {
-                elements.searchResults.innerHTML = '';
-                return;
-            }
-
-            const filtered = state.data.filter(item =>
-                item.symbol.includes(query) ||
-                item.symbol.replace('USDT', '').includes(query)
-            ).slice(0, 10);
-
-            this.renderResults(filtered);
-        }, 300));
-    },
-
-    showSearch: function () {
-        elements.searchContainer.style.display = 'block';
-        elements.searchInput.focus();
-        elements.searchInput.value = '';
-        elements.searchResults.innerHTML = '';
-    },
-
-    hideSearch: function () {
-        elements.searchContainer.style.display = 'none';
-        elements.searchInput.value = '';
-        elements.searchResults.innerHTML = '';
-    },
-
-    renderResults: function (results) {
-        if (results.length === 0) {
-            elements.searchResults.innerHTML = '<div class="no-results">No matching pairs found</div>';
-            elements.searchResults.style.display = 'block';
+    // Handle keyboard navigation in search results
+// In searchManager.init()
+// In searchManager.init() - update the keydown handler
+elements.searchInput.addEventListener('keydown', (e) => {
+    const items = Array.from(elements.searchResults.querySelectorAll('.coin-item'));
+    
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        
+        // If no item is focused and this is first arrow down
+        if (document.activeElement === elements.searchInput && e.key === 'ArrowDown' && items.length > 0) {
+            items[0].focus();
+            items[0].scrollIntoView({ block: 'nearest' });
             return;
         }
+        
+        const currentActive = document.activeElement;
+        let currentIndex = items.indexOf(currentActive);
+        
+        if (e.key === 'ArrowDown') {
+            const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+            items[nextIndex].focus();
+            items[nextIndex].scrollIntoView({ block: 'nearest' });
+        } 
+        else if (e.key === 'ArrowUp') {
+            if (currentIndex <= 0) {
+                elements.searchInput.focus();
+            } else {
+                items[currentIndex - 1].focus();
+                items[currentIndex - 1].scrollIntoView({ block: 'nearest' });
+            }
+        }
+    }
+    else if (e.key === 'Enter' && items.length > 0) {
+        e.preventDefault();
+        const focusedItem = document.activeElement;
+        if (items.includes(focusedItem)) {
+            focusedItem.click();
+        } else if (items.length > 0) {
+            items[0].click();
+        }
+    }
+});
 
-        elements.searchResults.innerHTML = results.map(item => `
-            <div class="coin-item" data-symbol="${item.symbol}">
-                <div class="coin-content">
-                    <span class="pair-name">${item.symbol.replace('USDT', '')}/USDT</span>
-                    ${getPlatformIcons(item.symbol)}
-                </div>
-                <span class="price">${formatter.price(item.lastPrice, item.symbol)}</span>
+    // Debounced search input
+elements.searchInput.addEventListener('input', debounce((e) => {
+    const query = e.target.value.trim().toUpperCase();
+    if (!query) {
+        elements.searchResults.innerHTML = '';
+        elements.searchResults.style.display = 'none';
+        return;
+    }
+
+    const filtered = state.data.filter(item => {
+        const symbol = item.symbol.toUpperCase();
+        const base = item.symbol.replace('USDT', '').toUpperCase();
+        return symbol.includes(query) || base.includes(query);
+    }).slice(0, 10);
+
+    this.renderResults(filtered);
+    
+    // Auto-focus first result if available
+    setTimeout(() => {
+        const firstItem = elements.searchResults.querySelector('.coin-item');
+        if (firstItem && document.activeElement === elements.searchInput) {
+            firstItem.focus();
+        }
+    }, 50);
+    }, 300));
+},
+
+showSearch: function () {
+    elements.searchContainer.style.display = 'block';
+    elements.searchInput.focus();
+    elements.searchInput.value = '';
+    elements.searchResults.innerHTML = '';
+    elements.searchContainer.classList.add('active'); // Add active class
+},
+
+
+hideSearch: function () {
+    elements.searchContainer.style.display = 'none';
+    elements.searchInput.value = '';
+    elements.searchResults.innerHTML = '';
+    elements.searchContainer.classList.remove('active');
+    document.getElementById('searchButton').classList.remove('active');
+    
+    // Return focus to a sensible element
+    document.getElementById('searchButton').focus();
+},
+
+renderResults: function (results) {
+    elements.searchResults.innerHTML = '';
+    
+    if (!results || results.length === 0) {
+        elements.searchResults.innerHTML = `
+            <div class="no-results">
+                <div>No matching pairs found</div>
+                <small>Try a different search term</small>
             </div>
-        `).join('');
-
+        `;
         elements.searchResults.style.display = 'block';
+        return;
+    }
 
-        document.querySelectorAll('.coin-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const symbol = item.getAttribute('data-symbol');
-                searchManager.handleSelect(symbol);
-                this.hideSearch();
-            });
+    // Ensure container is properly sized before rendering
+    elements.searchResults.style.maxHeight = '60vh';
+    elements.searchResults.style.display = 'block';
+
+    results.forEach((item, index) => {
+        const resultItem = document.createElement('div');
+        resultItem.className = 'coin-item';
+        resultItem.dataset.symbol = item.symbol;
+        resultItem.tabIndex = 0;
+        resultItem.innerHTML = `
+            <div class="coin-content">
+                <span class="pair-name">${item.symbol.replace('USDT', '')}</span>
+                ${getPlatformIcons(item.symbol)}
+            </div>
+            <span class="price">${formatter.price(item.lastPrice, item.symbol)}</span>
+        `;
+        
+        resultItem.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleSelect(item.symbol);
+            this.hideSearch();
         });
-    },
+        
+        elements.searchResults.appendChild(resultItem);
+    });
+    
+    // Auto-scroll to top when new results come in
+    elements.searchResults.scrollTop = 0;
+},
 
     handleSelect: function (symbol) {
         const isHighlighted = state.highlightedPairs[symbol]?.isHighlighted;
@@ -714,26 +798,6 @@ updateHighlightTimer: (symbol) => {
     }
 },
 
-
-    // ===== NOTIFICATION SYSTEM =====
-    showTempMessage: function(message, duration = 2000) {
-        // Remove any existing temp message
-        const existingMsg = document.querySelector('.temp-message');
-        if (existingMsg) existingMsg.remove();
-        
-        // Create and show new message
-        const msgElement = document.createElement('div');
-        msgElement.className = 'temp-message';
-        msgElement.textContent = message;
-        document.body.appendChild(msgElement);
-        
-        // Auto-remove after duration
-        setTimeout(() => {
-            msgElement.classList.add('fade-out');
-            setTimeout(() => msgElement.remove(), 300);
-        }, duration);
-    },
-
     // ===== CONNECTION STATUS =====
 updateConnectionStatus: () => {
     const statusMap = {
@@ -976,13 +1040,162 @@ window.addEventListener('beforeunload', () => {
 });
 
 
+
+
+
 // ===== INITIALIZATION =====
-    const init = () => {
-        document.title = "🟡 • Loading...";
-        ui.setupControls();
-        connectionManager.connect();
-        searchManager.init();
-    };
+// Device detection and handling
+const isMobile = {
+    Android: function() {
+        return navigator.userAgent.match(/Android/i);
+    },
+    iOS: function() {
+        return navigator.userAgent.match(/iPhone|iPad|iPod/i);
+    },
+    any: function() {
+        return (isMobile.Android() || isMobile.iOS());
+    }
+};
+
+// Initialize with device-specific settings
+const init = () => {
+    document.title = "🟡 • Loading...";
+    // Mobile-specific adjustments
+    if (isMobile.any()) {
+        // Reduce animation intensity on mobile
+        document.documentElement.style.setProperty('--animation-duration', '1000ms');
+        
+        // Add touch event listeners
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => {
+                btn.classList.add('touch-active');
+            });
+            btn.addEventListener('touchend', () => {
+                btn.classList.remove('touch-active');
+            });
+        });
+    }
+    
+// Add robust search button handler
+const searchButton = document.getElementById('searchButton');
+if (searchButton) {
+    searchButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (elements.searchContainer.style.display === 'block') {
+            searchManager.hideSearch();
+        } else {
+            searchManager.showSearch();
+            // Move focus to input only if not already focused
+            if (document.activeElement !== elements.searchInput) {
+                elements.searchInput.focus();
+            }
+        }
+    });
+}
+    
+// Desktop-specific adjustments
+else {
+    // Enable hover effects
+    document.documentElement.classList.add('desktop');
+    // More aggressive animations
+    document.documentElement.style.setProperty('--animation-duration', '3000ms');
+}
+    
+    ui.setupControls();
+    setupMobileButtons();
+    connectionManager.connect();
+    searchManager.init();
+};
+    
+// Mobile buttons setup function (outside init)
+// Improved mobile button setup with better touch handling
+function setupMobileButtons() {
+    if (isMobile.any()) {
+        // Helper function to simulate click with touch feedback
+        const simulateClickWithFeedback = (element, targetId) => {
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            
+            // Add touch feedback
+            element.classList.add('touch-active');
+            setTimeout(() => element.classList.remove('touch-active'), 200);
+            
+            // Trigger the click
+            target.click();
+        };
+        
+        // Connect mobile buttons to same functionality as desktop
+        document.getElementById('mobilePauseButton')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            simulateClickWithFeedback(e.currentTarget, 'pauseButton');
+        });
+        
+        document.getElementById('mobileRefreshButton')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            simulateClickWithFeedback(e.currentTarget, 'refreshButton');
+        });
+        
+        document.getElementById('mobileTVScreen')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            simulateClickWithFeedback(e.currentTarget, 'TVScreen');
+        });
+        
+        document.getElementById('mobileThemeToggle')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            simulateClickWithFeedback(e.currentTarget, 'themeToggle');
+        });
+        
+        document.getElementById('mobileSettingsButton')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            simulateClickWithFeedback(e.currentTarget, 'settingsButton');
+        });
+        
+        // Arrow buttons - FIXED VERSION
+        document.querySelector('.mobile-arrow.up')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Directly call showLessPairs instead of simulating click
+            const showLessPairs = () => {
+                const previousCount = state.visibleCount;
+                state.visibleCount = Math.max(state.visibleCount - 5, 5);
+                
+                if (state.visibleCount !== previousCount) {
+                    const lastVisibleRow = document.querySelector(`#data tr:nth-child(${state.visibleCount})`);
+                    const lastRowPosition = lastVisibleRow ? lastVisibleRow.getBoundingClientRect().top : 0;
+                    
+                    ui.renderTable(() => {
+                        if (state.visibleCount > 5) {
+                            const newLastRow = document.querySelector(`#data tr:nth-child(${state.visibleCount})`);
+                            if (newLastRow) {
+                                const currentPosition = newLastRow.getBoundingClientRect().top;
+                                window.scrollBy({
+                                    top: currentPosition - lastRowPosition,
+                                    behavior: 'smooth'
+                                });
+                            }
+                        } else {
+                            window.scrollTo({
+                                top: 0,
+                                behavior: 'smooth'
+                            });
+                        }
+                    });
+                }
+            };
+            showLessPairs();
+        });
+        
+        document.querySelector('.mobile-arrow.down')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            simulateClickWithFeedback(e.currentTarget, 'showMoreButton');
+        });
+    }
+}
+
+// Make sure to call this when DOM is loaded
+document.addEventListener('DOMContentLoaded', setupMobileButtons);
+    
     // Cleanup
     window.addEventListener('beforeunload', () => {
         // Clear highlight timers
